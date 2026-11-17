@@ -54,6 +54,37 @@ export const environment = { apiBaseUrl: 'http://localhost:8080/api/v1' };
 
 і перезберіть. Бекенд дозволяє cross-origin запити згідно з `CORS_ORIGINS`.
 
+## Docker
+
+`Dockerfile` збирає застосунок у два етапи (Node → nginx) і вже містить SPA-fallback
+та проксі `/api` і `/docs`. Адреса бекенду задається змінною `BACKEND_URL`
+(типово `http://backend:8080`):
+
+```bash
+docker build -t minecraft-mods-admin .
+docker run -p 8080:80 -e BACKEND_URL=http://host.docker.internal:8080 minecraft-mods-admin
+```
+
+Docker Compose (поруч із сервісом бекенду):
+
+```yaml
+services:
+  admin:
+    image: ghcr.io/<owner>/<repo>:latest
+    ports: ["8080:80"]
+    environment:
+      BACKEND_URL: http://backend:8080
+```
+
+### CI
+
+`.github/workflows/docker.yml` на кожен пуш у `main` (а також на теги `v*` і
+ручний запуск) збирає образ і публікує його в GitHub Container Registry:
+`ghcr.io/<owner>/<repo>:latest` та `:sha-<commit>`. На pull request збірка
+виконується без публікації. Окремих секретів не потрібно — використовується
+`GITHUB_TOKEN`; якщо пакет приватний, перевірте доступ до нього в налаштуваннях
+репозиторію (Packages).
+
 ## Екрани
 
 | Шлях              | Що робить                                                                                   |

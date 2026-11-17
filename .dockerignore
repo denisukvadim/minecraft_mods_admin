@@ -1,0 +1,15 @@
+.git
+.gitignore
+.github
+.angular
+.idea
+.vscode
+node_modules
+dist
+coverage
+npm-debug.log*
+README.md
+HANDOFF.md
+Dockerfile
+.dockerignore
+docker-compose.yml
