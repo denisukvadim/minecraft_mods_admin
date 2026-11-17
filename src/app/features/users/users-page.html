@@ -1,0 +1,94 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Users</h1>
+      <p>Accounts that can sign in. Only administrators can create or edit them.</p>
+    </div>
+    <span class="spacer"></span>
+    <button matButton="filled" type="button" (click)="createUser()">
+      <mat-icon>person_add</mat-icon>
+      New user
+    </button>
+  </header>
+
+  <div class="card card--flush">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Username</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of rows(); track user.id) {
+            <tr>
+              <td>{{ user.email }}</td>
+              <td>
+                {{ user.username }}
+                @if (user.id === currentUserId()) {
+                  <span class="chip chip--primary you-chip">you</span>
+                }
+              </td>
+              <td>
+                <span class="chip" [class]="user.is_active ? 'chip chip--ok' : 'chip chip--off'">
+                  {{ user.is_active ? 'active' : 'disabled' }}
+                </span>
+              </td>
+              <td class="muted">{{ user.created_at | date: 'medium' }}</td>
+              <td>
+                <div class="actions">
+                  <button
+                    matButton
+                    type="button"
+                    (click)="manage(user)"
+                    matTooltip="Roles, permissions and profile"
+                  >
+                    <mat-icon>manage_accounts</mat-icon>
+                    Manage
+                  </button>
+                  <button
+                    matIconButton
+                    type="button"
+                    aria-label="Delete user"
+                    matTooltip="Delete user"
+                    [disabled]="user.id === currentUserId()"
+                    (click)="remove(user)"
+                  >
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5">
+                <div class="empty-state">
+                  <mat-icon>group_off</mat-icon>
+                  <p>{{ loading() ? 'Loading users…' : 'No users found.' }}</p>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <app-pager
+      [offset]="offset()"
+      [count]="rows().length"
+      [pageSize]="pageSize"
+      [hasMore]="hasMore()"
+      (changed)="changePage($event)"
+    />
+  </div>
+
+  <p class="hint">
+    New accounts get the <span class="mono">user</span> role by default. That role starts with
+    <span class="mono">mods:read</span> and <span class="mono">mods:download</span>; adjust it under
+    <a routerLink="/roles">Roles</a>.
+  </p>
+</section>

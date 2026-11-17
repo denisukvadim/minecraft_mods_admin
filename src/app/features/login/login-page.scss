@@ -1,0 +1,109 @@
+.login {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(46, 125, 50, 0.18), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(255, 152, 0, 0.14), transparent 45%),
+    var(--mat-sys-surface-container-lowest, #f6f8f6);
+}
+
+.login__panel {
+  width: 100%;
+  max-width: 420px;
+  background: var(--mat-sys-surface, #fff);
+  border: 1px solid var(--mat-sys-outline-variant, #e2e5dc);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 18px 40px rgba(20, 60, 25, 0.1);
+}
+
+.login__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.login__mark {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: var(--mat-sys-primary, #2e7d32);
+  color: var(--mat-sys-on-primary, #fff);
+}
+
+.login__title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.login__subtitle {
+  font-size: 13px;
+  color: var(--mat-sys-on-surface-variant, #44483f);
+}
+
+.login__lead {
+  margin: 20px 0 24px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--mat-sys-on-surface-variant, #44483f);
+}
+
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.login__submit {
+  margin-top: 12px;
+  height: 44px;
+}
+
+.login__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--mat-sys-error-container, #ffdad6);
+  color: var(--mat-sys-on-error-container, #410002);
+  font-size: 13px;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.login__error mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.login__hint {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 24px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--mat-sys-on-surface-variant, #44483f);
+}
+
+.login__hint mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.login__hint code {
+  background: var(--mat-sys-surface-container-high, #e7ebe4);
+  padding: 1px 5px;
+  border-radius: 4px;
+}

@@ -1,0 +1,117 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Mods</h1>
+      <p>Files in the server's <span class="mono">MODS_DIR</span> directory.</p>
+    </div>
+    <span class="spacer"></span>
+
+    <input #fileInput type="file" hidden (change)="onFileSelected($event)" />
+    <button matButton="filled" type="button" [disabled]="uploading()" (click)="pickFile(fileInput)">
+      <mat-icon>upload</mat-icon>
+      Upload mod
+    </button>
+  </header>
+
+  @if (uploading()) {
+    <div class="card progress-overlay">
+      <mat-icon>cloud_upload</mat-icon>
+      <span class="progress-name">{{ uploadName() }}</span>
+      <mat-progress-bar mode="determinate" [value]="uploadPercent()" />
+      <span class="muted">{{ uploadPercent() }}%</span>
+    </div>
+  }
+
+  <div class="card card--flush">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>File</th>
+            <th class="num">Size</th>
+            <th>Modified</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (file of files(); track file.file_name) {
+            <tr>
+              <td>
+                <div class="file-name">
+                  <mat-icon>description</mat-icon>
+                  <span class="mono">{{ file.file_name }}</span>
+                </div>
+              </td>
+              <td class="num">{{ formatBytes(file.size_bytes) }}</td>
+              <td class="muted">
+                {{ file.modified_at ? (file.modified_at | date: 'medium') : '—' }}
+              </td>
+              <td>
+                <div class="actions">
+                  <button
+                    matIconButton
+                    type="button"
+                    matTooltip="Download"
+                    aria-label="Download file"
+                    (click)="download(file)"
+                  >
+                    <mat-icon>download</mat-icon>
+                  </button>
+                  <button
+                    matIconButton
+                    type="button"
+                    matTooltip="Action history"
+                    aria-label="Action history"
+                    (click)="openHistory(file)"
+                  >
+                    <mat-icon>history</mat-icon>
+                  </button>
+                  <button
+                    matIconButton
+                    type="button"
+                    matTooltip="Delete"
+                    aria-label="Delete file"
+                    class="danger"
+                    (click)="remove(file)"
+                  >
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="4">
+                <div class="empty-state">
+                  <mat-icon>folder_off</mat-icon>
+                  <p>
+                    @if (loading()) {
+                      Loading files…
+                    } @else {
+                      No mod files yet. Upload the first archive.
+                    }
+                  </p>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <app-pager
+      [offset]="offset()"
+      [count]="files().length"
+      [pageSize]="pageSize"
+      [hasMore]="hasMore()"
+      (changed)="changePage($event)"
+    />
+  </div>
+
+  <p class="hint">
+    Uploads are validated on the server: file names must be a single path segment, existing names
+    return <span class="mono">409</span>, and the size limit comes from
+    <span class="mono">MODS_MAX_UPLOAD_BYTES</span>. Every upload, download and deletion is recorded
+    in the <a routerLink="/audit">audit log</a>.
+  </p>
+</section>

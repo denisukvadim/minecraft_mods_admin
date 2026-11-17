@@ -1,0 +1,23 @@
+.file-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-name mat-icon {
+  color: var(--mat-sys-on-surface-variant, #44483f);
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.danger:hover mat-icon {
+  color: var(--mat-sys-error, #ba1a1a);
+}
+
+.progress-name {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

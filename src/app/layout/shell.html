@@ -1,0 +1,85 @@
+<mat-sidenav-container class="shell">
+  <mat-sidenav
+    class="sidenav"
+    [mode]="isHandset() ? 'over' : 'side'"
+    [opened]="navOpened()"
+    (openedChange)="navOpened.set($event)"
+  >
+    <div class="brand">
+      <div class="brand__mark">
+        <mat-icon>extension</mat-icon>
+      </div>
+      <div>
+        <div class="brand__title">Mods Admin</div>
+        <div class="brand__sub">Minecraft Mods API</div>
+      </div>
+    </div>
+
+    <mat-nav-list>
+      @for (item of navItems; track item.path) {
+        <a
+          mat-list-item
+          [routerLink]="item.path"
+          routerLinkActive
+          #link="routerLinkActive"
+          [activated]="link.isActive"
+        >
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+
+    <div class="sidenav__footer">
+      <div class="sidenav__user">
+        <mat-icon>verified_user</mat-icon>
+        <div>
+          <div class="sidenav__user-name">{{ auth.me()?.username }}</div>
+          <div class="sidenav__user-role">{{ auth.me()?.email }}</div>
+        </div>
+      </div>
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="content">
+    <mat-toolbar class="toolbar">
+      @if (isHandset()) {
+        <button matIconButton (click)="toggleNav()" aria-label="Toggle navigation">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
+      <span class="toolbar__title">{{ pageTitle() }}</span>
+      <span class="spacer"></span>
+
+      <button matButton [matMenuTriggerFor]="userMenu" class="user-button">
+        <mat-icon>account_circle</mat-icon>
+        <span class="user-button__name">{{ auth.me()?.username }}</span>
+        <mat-icon>arrow_drop_down</mat-icon>
+      </button>
+
+      <mat-menu #userMenu="matMenu">
+        <div class="menu-header">
+          <div class="menu-header__name">{{ auth.me()?.username }}</div>
+          <div class="menu-header__email">{{ auth.me()?.email }}</div>
+          <div class="chip-row menu-header__roles">
+            @for (role of auth.me()?.roles ?? []; track role) {
+              <span class="chip chip--primary">{{ role }}</span>
+            }
+          </div>
+        </div>
+        <button mat-menu-item type="button" disabled>
+          <mat-icon>shield</mat-icon>
+          <span>Admin panel</span>
+        </button>
+        <button mat-menu-item type="button" (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>Sign out</span>
+        </button>
+      </mat-menu>
+    </mat-toolbar>
+
+    <main class="main">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

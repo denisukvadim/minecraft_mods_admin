@@ -1,0 +1,76 @@
+<div class="login">
+  <div class="login__panel">
+    <div class="login__brand">
+      <div class="login__mark"><mat-icon>extension</mat-icon></div>
+      <div>
+        <div class="login__title">Minecraft Mods</div>
+        <div class="login__subtitle">Admin panel</div>
+      </div>
+    </div>
+
+    <p class="login__lead">
+      Sign in with an account that has the <strong>admin</strong> role. Accounts, roles and
+      permissions are managed in the panel itself.
+    </p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="login__form">
+      <mat-form-field appearance="outline">
+        <mat-label>Email</mat-label>
+        <input
+          matInput
+          type="email"
+          formControlName="email"
+          autocomplete="username"
+          placeholder="admin@example.com"
+        />
+        @if (form.controls.email.touched && form.controls.email.invalid) {
+          <mat-error>A valid email is required.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Password</mat-label>
+        <input
+          matInput
+          [type]="showPassword() ? 'text' : 'password'"
+          formControlName="password"
+          autocomplete="current-password"
+        />
+        <button
+          matIconButton
+          matSuffix
+          type="button"
+          (click)="togglePassword()"
+          [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+        >
+          <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+        @if (form.controls.password.touched && form.controls.password.invalid) {
+          <mat-error>Password is required.</mat-error>
+        }
+      </mat-form-field>
+
+      @if (loading()) {
+        <mat-progress-bar mode="indeterminate" />
+      }
+
+      @if (error(); as message) {
+        <div class="login__error" role="alert">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ message }}</span>
+        </div>
+      }
+
+      <button matButton="filled" type="submit" class="login__submit" [disabled]="loading()">
+        {{ loading() ? 'Signing in…' : 'Sign in' }}
+      </button>
+    </form>
+
+    <p class="login__hint">
+      <mat-icon>info</mat-icon>
+      <span>
+        The API documentation is available at <code>/docs</code> when the backend is running.
+      </span>
+    </p>
+  </div>
+</div>

@@ -1,0 +1,70 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Permissions</h1>
+      <p>
+        The rule catalog. Endpoints check these codes at request time, so a new rule starts empty:
+        attach it to a role or a user to grant access.
+      </p>
+    </div>
+    <span class="spacer"></span>
+    <button matButton="filled" type="button" (click)="create()">
+      <mat-icon>add</mat-icon>
+      New permission
+    </button>
+  </header>
+
+  <div class="card card--flush">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Description</th>
+            <th>Created</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (permission of rows(); track permission.id) {
+            <tr>
+              <td class="mono">{{ permission.code }}</td>
+              <td class="muted">{{ permission.description ?? '—' }}</td>
+              <td class="muted">{{ permission.created_at | date: 'mediumDate' }}</td>
+              <td>
+                <div class="actions">
+                  <button
+                    matIconButton
+                    type="button"
+                    aria-label="Delete permission"
+                    matTooltip="Delete permission"
+                    (click)="remove(permission)"
+                  >
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="4">
+                <div class="empty-state">
+                  <mat-icon>rule</mat-icon>
+                  <p>
+                    {{ loading() ? 'Loading permissions…' : 'The catalog is empty.' }}
+                  </p>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="hint">
+    Deleting a rule is immediate: any endpoint that checks it will answer
+    <span class="mono">403</span> until the rule exists again. The boot seeder re-creates the
+    built-in codes and restores them for the <span class="mono">admin</span> role.
+  </p>
+</section>

@@ -1,0 +1,112 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Audit log</h1>
+      <p>
+        Every upload, download and deletion, newest first. Filter by an exact file name to see one
+        file's history.
+      </p>
+    </div>
+    <span class="spacer"></span>
+    <button matButton type="button" (click)="load()" [disabled]="loading()">
+      <mat-icon>refresh</mat-icon>
+      Refresh
+    </button>
+  </header>
+
+  <div class="card toolbar-row">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field">
+      <mat-label>File name</mat-label>
+      <input
+        matInput
+        [formControl]="filter"
+        placeholder="sodium-0.6.13.jar"
+        (keyup.enter)="applyFilter()"
+      />
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
+    <button matButton="filled" type="button" (click)="applyFilter()">Filter</button>
+    @if (activeFilter(); as fileName) {
+      <span class="chip chip--primary mono">{{ fileName }}</span>
+      <button matButton type="button" (click)="clearFilter()">
+        <mat-icon>close</mat-icon>
+        Clear
+      </button>
+    }
+  </div>
+
+  <div class="card card--flush">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>User</th>
+            <th>Action</th>
+            <th>File</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.id) {
+            <tr>
+              <td class="muted nowrap">{{ row.created_at | date: 'medium' }}</td>
+              <td>
+                {{ actorLabel(row) }}
+                @if (row.username && row.user_email) {
+                  <div class="muted small">{{ row.user_email }}</div>
+                }
+              </td>
+              <td>
+                <span class="chip" [class]="'chip chip--' + row.action">
+                  {{ row.action }}
+                </span>
+              </td>
+              <td>
+                <button
+                  matButton
+                  type="button"
+                  class="file-link mono"
+                  matTooltip="Show this file's history"
+                  (click)="openHistory(row.file_name)"
+                >
+                  {{ row.file_name }}
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="4">
+                <div class="empty-state">
+                  <mat-icon>history_toggle_off</mat-icon>
+                  <p>
+                    @if (loading()) {
+                      Loading the audit log…
+                    } @else if (activeFilter()) {
+                      No recorded actions for this file.
+                    } @else {
+                      No actions recorded yet.
+                    }
+                  </p>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <app-pager
+      [offset]="offset()"
+      [count]="rows().length"
+      [pageSize]="pageSize"
+      [hasMore]="hasMore()"
+      (changed)="changePage($event)"
+    />
+  </div>
+
+  <p class="hint">
+    Identity comes from the <span class="mono">users</span> table: rows whose account was deleted
+    show “deleted account”. Deactivate accounts instead of deleting them if the history has to stay
+    attributable.
+  </p>
+</section>

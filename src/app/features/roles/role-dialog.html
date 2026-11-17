@@ -1,0 +1,69 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Edit role' : 'New role' }}</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <mat-dialog-content>
+    <div class="form-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Name</mat-label>
+        <input matInput formControlName="name" autocomplete="off" />
+        <mat-hint>2–50 characters: letters, digits, “_”, “-”.</mat-hint>
+        @if (form.controls.name.touched && form.controls.name.invalid) {
+          <mat-error>Use 2–50 letters, digits, “_” or “-”.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Description</mat-label>
+        <input matInput formControlName="description" autocomplete="off" />
+      </mat-form-field>
+    </div>
+
+    <div class="permissions">
+      <div class="permissions__head">
+        <h3 class="section-title">Permissions</h3>
+        <span class="chip chip--primary">{{ selected().size }} selected</span>
+      </div>
+
+      @if (loading()) {
+        <div class="loading">
+          <mat-spinner diameter="32" />
+        </div>
+      } @else {
+        @for (group of groups(); track group.resource) {
+          <section class="group">
+            <div class="group__title mono">{{ group.resource }}</div>
+            <div class="checkbox-grid">
+              @for (permission of group.permissions; track permission.id) {
+                <mat-checkbox
+                  [checked]="isSelected(permission.code)"
+                  (change)="toggle(permission.code, $event.checked)"
+                >
+                  <span class="mono">{{ permission.code }}</span>
+                  @if (permission.description) {
+                    <div class="muted small">{{ permission.description }}</div>
+                  }
+                </mat-checkbox>
+              }
+            </div>
+          </section>
+        } @empty {
+          <p class="muted">The permission catalog is empty.</p>
+        }
+      }
+    </div>
+
+    @if (isSystem) {
+      <p class="hint">
+        <mat-icon class="hint-icon">lock</mat-icon>
+        System role names are fixed. The permission set stays editable.
+      </p>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button matButton type="button" mat-dialog-close [disabled]="saving()">Cancel</button>
+    <button matButton="filled" type="submit" [disabled]="saving() || loading()">
+      {{ saving() ? 'Saving…' : isEdit ? 'Save role' : 'Create role' }}
+    </button>
+  </mat-dialog-actions>
+</form>

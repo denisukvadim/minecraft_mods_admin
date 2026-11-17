@@ -1,0 +1,96 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Roles</h1>
+      <p>
+        A role is a named permission set. Permissions can also be granted directly to a user;
+        effective access is the union of both.
+      </p>
+    </div>
+    <span class="spacer"></span>
+    <button matButton="filled" type="button" (click)="edit(null)">
+      <mat-icon>add</mat-icon>
+      New role
+    </button>
+  </header>
+
+  <div class="card card--flush">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Permissions</th>
+            <th>Created</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (role of rows(); track role.id) {
+            <tr>
+              <td>
+                <div class="role-name">
+                  <span>{{ role.name }}</span>
+                  @if (role.is_system) {
+                    <span class="chip chip--system">system</span>
+                  }
+                </div>
+              </td>
+              <td class="muted">{{ role.description ?? '—' }}</td>
+              <td>
+                <div class="chip-row">
+                  @for (permission of role.permissions; track permission.id) {
+                    <span class="chip mono">{{ permission.code }}</span>
+                  } @empty {
+                    <span class="muted">none</span>
+                  }
+                </div>
+              </td>
+              <td class="muted">{{ role.created_at | date: 'mediumDate' }}</td>
+              <td>
+                <div class="actions">
+                  <button
+                    matIconButton
+                    type="button"
+                    aria-label="Edit role"
+                    matTooltip="Edit role"
+                    (click)="edit(role)"
+                  >
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button
+                    matIconButton
+                    type="button"
+                    aria-label="Delete role"
+                    matTooltip="Delete role"
+                    [disabled]="role.is_system"
+                    (click)="remove(role)"
+                  >
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5">
+                <div class="empty-state">
+                  <mat-icon>shield_off</mat-icon>
+                  <p>{{ loading() ? 'Loading roles…' : 'No roles defined.' }}</p>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="hint">
+    <span class="mono">admin</span> and <span class="mono">user</span> are system roles: they cannot
+    be renamed or deleted, and the boot seeder restores the full permission catalog for
+    <span class="mono">admin</span> on every start. The panel itself requires the
+    <span class="mono">admin</span> role.
+  </p>
+</section>

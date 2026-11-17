@@ -1,0 +1,144 @@
+<h2 mat-dialog-title>Manage user</h2>
+
+<mat-dialog-content>
+  @if (loading()) {
+    <div class="loading">
+      <mat-spinner diameter="36" />
+    </div>
+  } @else if (detail(); as user) {
+    <p class="user-line">
+      <span class="user-line__name">{{ user.username }}</span>
+      <span class="muted">{{ user.email }}</span>
+      <span class="chip" [class]="user.is_active ? 'chip chip--ok' : 'chip chip--off'">
+        {{ user.is_active ? 'active' : 'disabled' }}
+      </span>
+    </p>
+
+    @if (isSelf()) {
+      <div class="warning">
+        <mat-icon>warning</mat-icon>
+        <span>
+          This is your own account. Removing the <span class="mono">admin</span>
+          role or disabling it will lock you out of the panel.
+        </span>
+      </div>
+    }
+
+    <mat-tab-group animationDuration="120ms">
+      <mat-tab label="Profile">
+        <form [formGroup]="form" (ngSubmit)="saveProfile()" class="tab-body">
+          <div class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Email</mat-label>
+              <input matInput type="email" formControlName="email" />
+              @if (form.controls.email.touched && form.controls.email.invalid) {
+                <mat-error>A valid email is required.</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Username</mat-label>
+              <input matInput formControlName="username" />
+              @if (form.controls.username.touched && form.controls.username.invalid) {
+                <mat-error>3–32 characters: letters, digits, “_”, “-”, “.”.</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full">
+              <mat-label>New password</mat-label>
+              <input
+                matInput
+                type="password"
+                formControlName="password"
+                autocomplete="new-password"
+              />
+              <mat-hint>Leave empty to keep the current password.</mat-hint>
+              @if (form.controls.password.touched && form.controls.password.invalid) {
+                <mat-error>Password must be 8–128 characters.</mat-error>
+              }
+            </mat-form-field>
+
+            <div class="full">
+              <mat-slide-toggle formControlName="isActive"> Account is active </mat-slide-toggle>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button matButton="filled" type="submit" [disabled]="busy()">
+              {{ busy() ? 'Saving…' : 'Save profile' }}
+            </button>
+          </div>
+        </form>
+      </mat-tab>
+
+      <mat-tab label="Roles">
+        <div class="tab-body">
+          <p class="hint">
+            Changes apply immediately: no save button, the API is called per toggle.
+          </p>
+          @for (role of allRoles(); track role.id) {
+            <div class="access-row">
+              <mat-checkbox
+                [checked]="isRoleAssigned(role)"
+                [disabled]="busy()"
+                (change)="toggleRole(role, $event.checked)"
+              >
+                <span class="access-row__name">{{ role.name }}</span>
+                @if (role.is_system) {
+                  <span class="chip chip--system">system</span>
+                }
+              </mat-checkbox>
+              <div class="chip-row">
+                @for (permission of role.permissions; track permission.id) {
+                  <span class="chip mono">{{ permission.code }}</span>
+                } @empty {
+                  <span class="muted">no permissions</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </mat-tab>
+
+      <mat-tab label="Direct permissions">
+        <div class="tab-body">
+          <p class="hint">
+            Granted straight to this account, on top of the roles. Effective access is the union of
+            both.
+          </p>
+
+          <div class="chip-row effective">
+            @for (code of user.effective_permissions; track code) {
+              <span class="chip chip--primary mono">{{ code }}</span>
+            } @empty {
+              <span class="muted">No effective permissions.</span>
+            }
+          </div>
+
+          <mat-divider class="divider" />
+
+          @for (permission of allPermissions(); track permission.id) {
+            <div class="access-row">
+              <mat-checkbox
+                [checked]="isPermissionGranted(permission)"
+                [disabled]="busy()"
+                (change)="togglePermission(permission, $event.checked)"
+              >
+                <span class="mono">{{ permission.code }}</span>
+              </mat-checkbox>
+              @if (permission.description) {
+                <span class="muted small">{{ permission.description }}</span>
+              }
+            </div>
+          }
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  } @else {
+    <p class="muted">This user could not be loaded.</p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button matButton type="button" (click)="close()">Close</button>
+</mat-dialog-actions>
