@@ -31,6 +31,13 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
+    # Favicons keep a stable URL, so they must not be cached for long —
+    # otherwise browsers (and this vhost) pin the old icon for days.
+    location ~* /(?:favicon(?:-\d+x\d+)?\.(?:ico|png|svg)|apple-touch-icon\.png)$ {
+        expires -1;
+        try_files $uri =404;
+    }
+
     # Fingerprinted assets can be cached aggressively.
     location ~* \.(?:js|css|woff2?|ttf|eot|svg|png|jpe?g|gif|ico|webp)$ {
         expires 30d;
