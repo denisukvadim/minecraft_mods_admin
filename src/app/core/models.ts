@@ -114,6 +114,26 @@ export interface ModFileActionDto {
   created_at: string;
 }
 
+/** Mirrors `ServerStatusDto` from the backend's `/server/status`. */
+export interface ServerStatusDto {
+  container: string;
+  image: string | null;
+  state: string;
+  running: boolean;
+  started_at: string | null;
+  finished_at: string | null;
+  restart_count: number;
+  health: string | null;
+}
+
+/** Mirrors `ServerLogsDto` from the backend's `/server/logs`. */
+export interface ServerLogsDto {
+  container: string;
+  tail: number;
+  timestamps: boolean;
+  logs: string;
+}
+
 export interface PageRequest {
   limit: number;
   offset: number;

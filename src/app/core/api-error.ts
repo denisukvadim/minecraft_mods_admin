@@ -31,3 +31,8 @@ export function apiErrorMessage(error: unknown): string {
   }
   return 'Unexpected error';
 }
+
+/** HTTP status of an `HttpErrorResponse`, or `null` for any other thrown value. */
+export function apiErrorStatus(error: unknown): number | null {
+  return error instanceof HttpErrorResponse ? error.status : null;
+}

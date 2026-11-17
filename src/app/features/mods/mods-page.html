@@ -7,11 +7,128 @@
     <span class="spacer"></span>
 
     <input #fileInput type="file" hidden (change)="onFileSelected($event)" />
-    <button matButton="filled" type="button" [disabled]="uploading()" (click)="pickFile(fileInput)">
+    <button
+      matButton="filled"
+      type="button"
+      [disabled]="uploading() || !canManageFiles()"
+      [matTooltip]="canManageFiles() ? '' : 'Stop the server before changing mod files'"
+      [matTooltipDisabled]="canManageFiles()"
+      (click)="pickFile(fileInput)"
+    >
       <mat-icon>upload</mat-icon>
       Upload mod
     </button>
   </header>
+
+  @if (serverConfigured()) {
+    <section class="card server-card">
+      <div class="server-main">
+        <mat-icon class="server-icon">dns</mat-icon>
+
+        <div class="server-info">
+          <div class="row">
+            <span class="mono server-name">{{ serverStatus()?.container ?? 'minecraft' }}</span>
+            <span
+              class="chip"
+              [class.chip--ok]="serverRunning()"
+              [class.chip--off]="serverChecked() && !serverRunning()"
+            >
+              {{ serverStateLabel() }}
+            </span>
+          </div>
+
+          <p class="muted server-meta">
+            @if (serverStatus(); as status) {
+              {{ status.image ?? 'unknown image' }} · restarts: {{ status.restart_count }}
+              @if (status.started_at) {
+                · started {{ status.started_at | date: 'medium' }}
+              }
+            } @else if (serverStatusUnknown()) {
+              Cannot read the container state; mod file changes stay disabled until it is known.
+            } @else {
+              Reading container state…
+            }
+          </p>
+        </div>
+
+        <span class="spacer"></span>
+
+        <div class="server-actions">
+          <button
+            matIconButton
+            type="button"
+            matTooltip="Refresh status"
+            aria-label="Refresh server status"
+            (click)="refreshStatus(false)"
+          >
+            <mat-icon>refresh</mat-icon>
+          </button>
+
+          <button
+            matButton="filled"
+            type="button"
+            [disabled]="serverRunning() || serverAction() !== null"
+            (click)="runServerAction('start')"
+          >
+            <mat-icon>play_arrow</mat-icon>
+            Start
+          </button>
+
+          <button
+            matButton="outlined"
+            type="button"
+            [disabled]="!serverRunning() || serverAction() !== null"
+            (click)="runServerAction('stop')"
+          >
+            <mat-icon>stop</mat-icon>
+            Stop
+          </button>
+
+          <button
+            matButton="outlined"
+            type="button"
+            [disabled]="!serverRunning() || serverAction() !== null"
+            (click)="runServerAction('restart')"
+          >
+            <mat-icon>restart_alt</mat-icon>
+            Restart
+          </button>
+
+          <button
+            matButton
+            type="button"
+            [disabled]="!serverRunning()"
+            matTooltip="Logs are available while the server is running"
+            (click)="openLogs()"
+          >
+            <mat-icon>terminal</mat-icon>
+            Logs
+          </button>
+        </div>
+      </div>
+
+      @if (serverAction(); as action) {
+        <mat-progress-bar mode="indeterminate" />
+        <p class="muted server-busy">Server {{ action }} in progress…</p>
+      }
+    </section>
+  } @else {
+    <p class="hint">
+      Server control is not configured on the backend (set
+      <span class="mono">PORTAINER_URL</span> and <span class="mono">PORTAINER_API_KEY</span>). Mod
+      files can be changed at any time.
+    </p>
+  }
+
+  @if (serverRunning()) {
+    <div class="notice">
+      <mat-icon>lock</mat-icon>
+      <span>
+        The server is running, so upload and delete are disabled. Stop the server before changing
+        mod files; restart it afterwards to load the new set.
+      </span>
+    </div>
+  }
 
   @if (uploading()) {
     <div class="card progress-overlay">
@@ -44,7 +161,11 @@
               </td>
               <td class="num">{{ formatBytes(file.size_bytes) }}</td>
               <td class="muted">
-                {{ file.modified_at ? (file.modified_at | date: 'medium') : '—' }}
+                @if (file.modified_at) {
+                  {{ file.modified_at | date: 'medium' }}
+                } @else {
+                  —
+                }
               </td>
               <td>
                 <div class="actions">
@@ -69,9 +190,10 @@
                   <button
                     matIconButton
                     type="button"
-                    matTooltip="Delete"
                     aria-label="Delete file"
                     class="danger"
+                    [disabled]="!canManageFiles()"
+                    [matTooltip]="canManageFiles() ? 'Delete' : 'Stop the server first'"
                     (click)="remove(file)"
                   >
                     <mat-icon>delete</mat-icon>
@@ -111,7 +233,8 @@
   <p class="hint">
     Uploads are validated on the server: file names must be a single path segment, existing names
     return <span class="mono">409</span>, and the size limit comes from
-    <span class="mono">MODS_MAX_UPLOAD_BYTES</span>. Every upload, download and deletion is recorded
-    in the <a routerLink="/audit">audit log</a>.
+    <span class="mono">MODS_MAX_UPLOAD_BYTES</span>. Upload and delete are rejected while the
+    Minecraft server is running. Every upload, download and deletion is recorded in the
+    <a routerLink="/audit">audit log</a>.
   </p>
 </section>

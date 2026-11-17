@@ -29,7 +29,9 @@ Node **26.13.1**, npm **12.2.2**, TypeScript ~6.0.
 - `/login` — email+пароль, перевірка ролі `admin` **до** збереження токена;
 - `/forbidden` — якщо роль зникла під час сесії;
 - `/mods` — список файлів, upload із прогресом (multipart), download, delete,
-  діалог історії по файлу;
+  діалог історії по файлу; картка сервера Minecraft: статус (polling 10 с),
+  Start/Stop/Restart, діалог логів (auto-refresh 5 с, 100/300/1000 рядків);
+  upload і delete заблоковані, поки сервер запущений;
 - `/users` — список, створення, видалення, діалог `Manage` з трьома вкладками:
   профіль (кнопка Save), ролі (одразу), прямі права (одразу) + ефективні права;
 - `/roles` — список, створення/редагування з чекбоксами прав по ресурсах,
@@ -110,7 +112,8 @@ src/
     └── features/
         ├── login/              # LoginPage
         ├── forbidden/          # ForbiddenPage
-        ├── mods/               # ModsPage + ModsService
+        ├── mods/               # ModsPage + ModsService (+ картка сервера)
+        ├── server/             # ServerService, ServerLogsDialog
         ├── users/              # UsersPage, CreateUserDialog, ManageUserDialog, UsersService
         ├── roles/              # RolesPage, RoleDialog, RolesService
         ├── permissions/        # PermissionsPage, PermissionDialog, PermissionsService
@@ -148,6 +151,7 @@ src/
 | логін       | `POST /auth/login`, `GET /auth/me`                                                             |
 | shell       | `GET /auth/me` (refreshMe на старт)                                                            |
 | mods        | `GET /mods`, `POST /mods`, `GET /mods/{name}/download`, `DELETE /mods/{name}`                  |
+| server      | `GET /server/status`, `POST /server/{start,stop,restart}`, `GET /server/logs`                   |
 | users       | `GET/POST /users`, `GET/PATCH/DELETE /users/{id}`                                              |
 | manage      | `POST/DELETE /users/{id}/roles/{roleId}`, `POST/DELETE /users/{id}/permissions/{permissionId}` |
 | roles       | `GET/POST /roles`, `GET/PATCH/DELETE /roles/{id}`, `PUT /roles/{id}/permissions`               |
@@ -179,6 +183,15 @@ src/
   потім тимчасовий object URL і `<a download>`.
 - **Аудит**: фільтр — це **точна** назва файлу (history-ендпоінт), не підрядок.
   Порожній фільтр повертає загальний журнал.
+- **Керування сервером**: статус опитується кожні 10 с (`setInterval` +
+  `DestroyRef`), поки сторінка відкрита; під час дії кнопки блокуються. `503` від
+  `/server/status` означає «Portainer не налаштований» — картка ховається,
+  upload/delete лишаються доступними (як і на бекенді). Інші помилки статусу
+  трактуються як «стан невідомий»: зміни файлів блокуються (fail-closed).
+- **Stop/Restart підтверджуються** через `confirmAction`: гравців буде
+  відключено; Stop лишає контейнер вимкненим до явного Start.
+- **Логи** доступні лише для запущеного сервера; діалог сам опитує
+  `/server/logs`, доки відкритий і ввімкнено Auto-refresh.
 
 ## 7. Перевірки
 
@@ -253,6 +266,10 @@ email `ui-smoke-<timestamp>@example.com` — видаліть його чере�
 - **Пагінація offset-only**, без total; сортування/пошук на сервері відсутні.
   Фільтр аудиту — точна назва файлу.
 - **Немає «replace» для моду**: повторний upload дає `409`, треба спершу видалити.
+- **Логи лише polling-ом**, без SSE/WebSocket; `tail` обмежений 1000 рядків, історію
+  старішу за останній хвіст з панелі не видно.
+- **Статус сервера — додатковий запит до бекенду** кожні 10 с; без Portainer
+  картка не показується.
 - **Немає route-level permission-гейтингу**: весь застосунок admin-only; якщо
   колись з'являться не-адмінські екрани, знадобиться окремий guard/капабіліті.
 - **Тестів мало**: 5 unit-тестів (shell + format); сервіси/діалоги/сторінки не
@@ -296,6 +313,8 @@ email `ui-smoke-<timestamp>@example.com` — видаліть його чере�
 - `src/app/features/users/manage-user-dialog.ts` — найскладніший екран (ролі,
   прямі права, профіль, self-warning);
 - `src/app/features/mods/mods-page.ts` + `mods.service.ts` — upload/download/delete;
+- `src/app/features/server/server.service.ts` — `/server/*`;
+- `src/app/features/server/server-logs-dialog.ts` — діалог логів;
 - `src/app/features/audit/history-dialog.ts` — спільний діалог історії;
 - `src/styles.scss` — тема й утиліти (`page`, `card`, `data-table`, `chip`, …);
 - `proxy.conf.json`, `angular.json` — dev-проксі;
