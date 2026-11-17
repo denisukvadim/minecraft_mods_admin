@@ -12,10 +12,11 @@ import { AuthService } from '../../core/auth.service';
     <div class="forbidden">
       <div class="forbidden__panel">
         <mat-icon class="forbidden__icon">shield</mat-icon>
-        <h1>Admin access required</h1>
+        <h1>Access denied</h1>
         <p>
           You are signed in as <strong>{{ auth.me()?.username }}</strong>, but this account does not
-          carry the <code>admin</code> role. Ask an administrator to grant it, then sign in again.
+          have access to this section. Ask an administrator to grant the required permission, then
+          sign in again.
         </p>
         <button matButton="filled" type="button" (click)="signOut()">Sign out</button>
       </div>

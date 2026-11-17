@@ -18,6 +18,9 @@ FROM nginx:1.29-alpine AS runtime
 # nginx entrypoint runs envsubst on /etc/nginx/templates/*.template,
 # so ${BACKEND_URL} is resolved at container start.
 ENV BACKEND_URL=http://backend:8080
+# Must stay >= the API's MODS_MAX_UPLOAD_BYTES, otherwise nginx rejects mod
+# uploads with its own 413 before they reach the backend.
+ENV CLIENT_MAX_BODY_SIZE=128m
 
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist/admin-panel/browser /usr/share/nginx/html

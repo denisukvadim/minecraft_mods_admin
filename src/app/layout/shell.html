@@ -16,7 +16,7 @@
     </div>
 
     <mat-nav-list>
-      @for (item of navItems; track item.path) {
+      @for (item of navItems(); track item.path) {
         <a
           mat-list-item
           [routerLink]="item.path"
@@ -69,7 +69,7 @@
         </div>
         <button mat-menu-item type="button" disabled>
           <mat-icon>shield</mat-icon>
-          <span>Admin panel</span>
+          <span>{{ auth.isAdmin() ? 'Administrator' : 'Mods operator' }}</span>
         </button>
         <button mat-menu-item type="button" (click)="logout()">
           <mat-icon>logout</mat-icon>

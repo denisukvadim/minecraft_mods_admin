@@ -9,6 +9,12 @@ import { ApiError } from './models';
  */
 export function apiErrorMessage(error: unknown): string {
   if (error instanceof HttpErrorResponse) {
+    // A 413 often comes from the reverse proxy (nginx) as an HTML page, so it
+    // must not be shown verbatim: explain the limit instead.
+    if (error.status === 413) {
+      return 'The file is too large for the server (413). Raise the upload limit and try again.';
+    }
+
     const body: unknown = error.error;
 
     if (typeof body === 'string' && body.trim().length > 0) {

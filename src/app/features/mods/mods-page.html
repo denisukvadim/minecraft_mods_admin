@@ -6,121 +6,132 @@
     </div>
     <span class="spacer"></span>
 
-    <input #fileInput type="file" hidden (change)="onFileSelected($event)" />
-    <button
-      matButton="filled"
-      type="button"
-      [disabled]="uploading() || !canManageFiles()"
-      [matTooltip]="canManageFiles() ? '' : 'Stop the server before changing mod files'"
-      [matTooltipDisabled]="canManageFiles()"
-      (click)="pickFile(fileInput)"
-    >
-      <mat-icon>upload</mat-icon>
-      Upload mod
-    </button>
+    @if (canCreateUsers()) {
+      <button matButton type="button" (click)="createUser()">
+        <mat-icon>person_add</mat-icon>
+        New user
+      </button>
+    }
+
+    @if (canUpload()) {
+      <input #fileInput type="file" hidden (change)="onFileSelected($event)" />
+      <button
+        matButton="filled"
+        type="button"
+        [disabled]="uploading() || !canManageFiles()"
+        [matTooltip]="canManageFiles() ? '' : 'Stop the server before changing mod files'"
+        [matTooltipDisabled]="canManageFiles()"
+        (click)="pickFile(fileInput)"
+      >
+        <mat-icon>upload</mat-icon>
+        Upload mod
+      </button>
+    }
   </header>
 
-  @if (serverConfigured()) {
-    <section class="card server-card">
-      <div class="server-main">
-        <mat-icon class="server-icon">dns</mat-icon>
+  @if (canManageServer()) {
+    @if (serverConfigured()) {
+      <section class="card server-card">
+        <div class="server-main">
+          <mat-icon class="server-icon">dns</mat-icon>
 
-        <div class="server-info">
-          <div class="row">
-            <span class="mono server-name">{{ serverStatus()?.container ?? 'minecraft' }}</span>
-            <span
-              class="chip"
-              [class.chip--ok]="serverRunning()"
-              [class.chip--off]="serverChecked() && !serverRunning()"
-            >
-              {{ serverStateLabel() }}
-            </span>
+          <div class="server-info">
+            <div class="row">
+              <span class="mono server-name">{{ serverStatus()?.container ?? 'minecraft' }}</span>
+              <span
+                class="chip"
+                [class.chip--ok]="serverRunning()"
+                [class.chip--off]="serverChecked() && !serverRunning()"
+              >
+                {{ serverStateLabel() }}
+              </span>
+            </div>
+
+            <p class="muted server-meta">
+              @if (serverStatus(); as status) {
+                {{ status.image ?? 'unknown image' }} · restarts: {{ status.restart_count }}
+                @if (status.started_at) {
+                  · started {{ status.started_at | date: 'medium' }}
+                }
+              } @else if (serverStatusUnknown()) {
+                Cannot read the container state; mod file changes stay disabled until it is known.
+              } @else {
+                Reading container state…
+              }
+            </p>
           </div>
 
-          <p class="muted server-meta">
-            @if (serverStatus(); as status) {
-              {{ status.image ?? 'unknown image' }} · restarts: {{ status.restart_count }}
-              @if (status.started_at) {
-                · started {{ status.started_at | date: 'medium' }}
-              }
-            } @else if (serverStatusUnknown()) {
-              Cannot read the container state; mod file changes stay disabled until it is known.
-            } @else {
-              Reading container state…
-            }
-          </p>
+          <span class="spacer"></span>
+
+          <div class="server-actions">
+            <button
+              matIconButton
+              type="button"
+              matTooltip="Refresh status"
+              aria-label="Refresh server status"
+              (click)="refreshStatus(false)"
+            >
+              <mat-icon>refresh</mat-icon>
+            </button>
+
+            <button
+              matButton="filled"
+              type="button"
+              [disabled]="serverRunning() || serverAction() !== null"
+              (click)="runServerAction('start')"
+            >
+              <mat-icon>play_arrow</mat-icon>
+              Start
+            </button>
+
+            <button
+              matButton="outlined"
+              type="button"
+              [disabled]="!serverRunning() || serverAction() !== null"
+              (click)="runServerAction('stop')"
+            >
+              <mat-icon>stop</mat-icon>
+              Stop
+            </button>
+
+            <button
+              matButton="outlined"
+              type="button"
+              [disabled]="!serverRunning() || serverAction() !== null"
+              (click)="runServerAction('restart')"
+            >
+              <mat-icon>restart_alt</mat-icon>
+              Restart
+            </button>
+
+            <button
+              matButton
+              type="button"
+              [disabled]="!serverRunning()"
+              matTooltip="Logs are available while the server is running"
+              (click)="openLogs()"
+            >
+              <mat-icon>terminal</mat-icon>
+              Logs
+            </button>
+          </div>
         </div>
 
-        <span class="spacer"></span>
-
-        <div class="server-actions">
-          <button
-            matIconButton
-            type="button"
-            matTooltip="Refresh status"
-            aria-label="Refresh server status"
-            (click)="refreshStatus(false)"
-          >
-            <mat-icon>refresh</mat-icon>
-          </button>
-
-          <button
-            matButton="filled"
-            type="button"
-            [disabled]="serverRunning() || serverAction() !== null"
-            (click)="runServerAction('start')"
-          >
-            <mat-icon>play_arrow</mat-icon>
-            Start
-          </button>
-
-          <button
-            matButton="outlined"
-            type="button"
-            [disabled]="!serverRunning() || serverAction() !== null"
-            (click)="runServerAction('stop')"
-          >
-            <mat-icon>stop</mat-icon>
-            Stop
-          </button>
-
-          <button
-            matButton="outlined"
-            type="button"
-            [disabled]="!serverRunning() || serverAction() !== null"
-            (click)="runServerAction('restart')"
-          >
-            <mat-icon>restart_alt</mat-icon>
-            Restart
-          </button>
-
-          <button
-            matButton
-            type="button"
-            [disabled]="!serverRunning()"
-            matTooltip="Logs are available while the server is running"
-            (click)="openLogs()"
-          >
-            <mat-icon>terminal</mat-icon>
-            Logs
-          </button>
-        </div>
-      </div>
-
-      @if (serverAction(); as action) {
-        <mat-progress-bar mode="indeterminate" />
-        <p class="muted server-busy">Server {{ action }} in progress…</p>
-      }
-    </section>
-  } @else {
-    <p class="hint">
-      Server control is not configured on the backend (set
-      <span class="mono">PORTAINER_URL</span> and <span class="mono">PORTAINER_API_KEY</span>). Mod
-      files can be changed at any time.
-    </p>
+        @if (serverAction(); as action) {
+          <mat-progress-bar mode="indeterminate" />
+          <p class="muted server-busy">Server {{ action }} in progress…</p>
+        }
+      </section>
+    } @else {
+      <p class="hint">
+        Server control is not configured on the backend (set
+        <span class="mono">PORTAINER_URL</span> and <span class="mono">PORTAINER_API_KEY</span>).
+        Mod files can be changed at any time.
+      </p>
+    }
   }
 
-  @if (serverRunning()) {
+  @if (canManageServer() && serverRunning()) {
     <div class="notice">
       <mat-icon>lock</mat-icon>
       <span>
@@ -169,15 +180,17 @@
               </td>
               <td>
                 <div class="actions">
-                  <button
-                    matIconButton
-                    type="button"
-                    matTooltip="Download"
-                    aria-label="Download file"
-                    (click)="download(file)"
-                  >
-                    <mat-icon>download</mat-icon>
-                  </button>
+                  @if (canDownload()) {
+                    <button
+                      matIconButton
+                      type="button"
+                      matTooltip="Download"
+                      aria-label="Download file"
+                      (click)="download(file)"
+                    >
+                      <mat-icon>download</mat-icon>
+                    </button>
+                  }
                   <button
                     matIconButton
                     type="button"
@@ -187,17 +200,19 @@
                   >
                     <mat-icon>history</mat-icon>
                   </button>
-                  <button
-                    matIconButton
-                    type="button"
-                    aria-label="Delete file"
-                    class="danger"
-                    [disabled]="!canManageFiles()"
-                    [matTooltip]="canManageFiles() ? 'Delete' : 'Stop the server first'"
-                    (click)="remove(file)"
-                  >
-                    <mat-icon>delete</mat-icon>
-                  </button>
+                  @if (canDelete()) {
+                    <button
+                      matIconButton
+                      type="button"
+                      aria-label="Delete file"
+                      class="danger"
+                      [disabled]="!canManageFiles()"
+                      [matTooltip]="canManageFiles() ? 'Delete' : 'Stop the server first'"
+                      (click)="remove(file)"
+                    >
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  }
                 </div>
               </td>
             </tr>

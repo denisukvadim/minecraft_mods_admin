@@ -53,6 +53,19 @@ export class AuthService {
   readonly token = computed(() => this.state()?.token ?? null);
   readonly isAdmin = computed(() => this.state()?.me.roles.includes('admin') ?? false);
 
+  /**
+   * Whether the panel is usable at all. Admins always are; other accounts need
+   * the Mods section (`mods:read`), which is the only area they can open.
+   */
+  readonly canUsePanel = computed(
+    () => this.isAdmin() || (this.state()?.me.permissions.includes('mods:read') ?? false),
+  );
+
+  /** Effective permission of the current session, used to gate UI affordances. */
+  can(permission: string): boolean {
+    return this.state()?.me.permissions.includes(permission) ?? false;
+  }
+
   /** A token that has not expired yet; the backend still re-checks it. */
   hasValidSession(): boolean {
     const session = this.state();
@@ -67,16 +80,17 @@ export class AuthService {
       }),
     );
 
-    // The panel is admin-only, so verify the role before the token is kept:
-    // a valid non-admin account should never reach the shell.
+    // The panel accepts administrators and accounts that can see the Mods
+    // section. Verify before the token is kept so a valid but unrelated account
+    // never reaches the shell.
     const me = await firstValueFrom(
       this.http.get<MeResponse>(`${environment.apiBaseUrl}/auth/me`, {
         headers: { Authorization: `Bearer ${response.access_token}` },
       }),
     );
 
-    if (!me.roles.includes('admin')) {
-      throw new Error('This account does not have the admin role.');
+    if (!me.roles.includes('admin') && !me.permissions.includes('mods:read')) {
+      throw new Error('This account does not have access to the admin panel.');
     }
 
     this.persist({
@@ -99,7 +113,7 @@ export class AuthService {
     if (!session) {
       return;
     }
-    if (!me.roles.includes('admin')) {
+    if (!me.roles.includes('admin') && !me.permissions.includes('mods:read')) {
       this.clear();
       await this.router.navigate(['/forbidden']);
       return;

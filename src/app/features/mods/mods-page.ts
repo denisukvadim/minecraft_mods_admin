@@ -6,8 +6,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 
 import { apiErrorMessage, apiErrorStatus } from '../../core/api-error';
+import { AuthService } from '../../core/auth.service';
 import { confirmAction } from '../../core/confirm-dialog';
 import { formatBytes } from '../../core/format';
 import { ModFileDto, ServerStatusDto } from '../../core/models';
@@ -17,6 +19,7 @@ import { Pager } from '../../core/pager';
 import { HistoryDialog } from '../audit/history-dialog';
 import { ServerLogsDialog } from '../server/server-logs-dialog';
 import { ServerService } from '../server/server.service';
+import { CreateUserDialog } from '../users/create-user-dialog';
 import { ModsService } from './mods.service';
 
 const STATUS_REFRESH_MS = 10_000;
@@ -40,6 +43,7 @@ type ServerAction = 'start' | 'stop' | 'restart';
 export class ModsPage {
   private readonly mods = inject(ModsService);
   private readonly server = inject(ServerService);
+  private readonly auth = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
   private readonly destroyRef = inject(DestroyRef);
@@ -65,13 +69,22 @@ export class ModsPage {
 
   protected readonly serverRunning = computed(() => this.serverStatus()?.running === true);
 
+  protected readonly canUpload = computed(() => this.auth.can('mods:upload'));
+  protected readonly canDelete = computed(() => this.auth.can('mods:delete'));
+  protected readonly canDownload = computed(() => this.auth.can('mods:download'));
+  protected readonly canManageServer = computed(() => this.auth.can('server:manage'));
+  protected readonly canCreateUsers = computed(() => this.auth.can('users:create'));
+
   /**
    * Mod files may only change while the server is stopped. The backend enforces
    * the same rule; the UI mirrors it so the buttons explain themselves. Without
-   * Portainer there is no state to block on, matching the backend behaviour.
+   * `server:manage` there is no state to read from the panel, so the backend
+   * stays the only guard.
    */
   protected readonly canManageFiles = computed(
-    () => this.serverChecked() && !this.serverRunning() && !this.serverStatusUnknown(),
+    () =>
+      !this.canManageServer() ||
+      (this.serverChecked() && !this.serverRunning() && !this.serverStatusUnknown()),
   );
 
   protected readonly serverStateLabel = computed(() => {
@@ -92,10 +105,15 @@ export class ModsPage {
 
   constructor() {
     void this.load();
-    void this.refreshStatus(false);
 
-    const timer = setInterval(() => void this.refreshStatus(), STATUS_REFRESH_MS);
-    this.destroyRef.onDestroy(() => clearInterval(timer));
+    // The server card and its polling are only for accounts that may control
+    // the container; the backend still enforces the stopped-before-change rule
+    // for everybody else.
+    if (this.canManageServer()) {
+      void this.refreshStatus(false);
+      const timer = setInterval(() => void this.refreshStatus(), STATUS_REFRESH_MS);
+      this.destroyRef.onDestroy(() => clearInterval(timer));
+    }
   }
 
   protected changePage(offset: number): void {
@@ -192,7 +210,26 @@ export class ModsPage {
     });
   }
 
+  /**
+   * Available to any account holding `users:create`. The dialog hides role
+   * selection for non-admins; the backend copies the creator's access instead.
+   */
+  protected async createUser(): Promise<void> {
+    const ref = this.dialog.open<CreateUserDialog, void, boolean>(CreateUserDialog, {
+      width: '560px',
+      maxWidth: '95vw',
+    });
+    const created = await firstValueFrom(ref.afterClosed());
+    if (created === true) {
+      this.notify.success('User created with your access');
+    }
+  }
+
   protected pickFile(input: HTMLInputElement): void {
+    if (!this.canUpload()) {
+      this.notify.info('This account cannot upload mod files.');
+      return;
+    }
     if (this.uploading()) {
       return;
     }
@@ -208,6 +245,10 @@ export class ModsPage {
     const file = input.files?.[0];
     input.value = '';
     if (!file) {
+      return;
+    }
+    if (!this.canUpload()) {
+      this.notify.info('This account cannot upload mod files.');
       return;
     }
     if (!this.canManageFiles()) {
@@ -232,6 +273,10 @@ export class ModsPage {
   }
 
   protected async download(file: ModFileDto): Promise<void> {
+    if (!this.canDownload()) {
+      this.notify.info('This account cannot download mod files.');
+      return;
+    }
     try {
       await this.mods.download(file.file_name);
       this.notify.success(`Downloading ${file.file_name}`);
@@ -241,6 +286,10 @@ export class ModsPage {
   }
 
   protected async remove(file: ModFileDto): Promise<void> {
+    if (!this.canDelete()) {
+      this.notify.info('This account cannot delete mod files.');
+      return;
+    }
     if (!this.canManageFiles()) {
       this.notify.info('Stop the Minecraft server before changing mod files.');
       return;

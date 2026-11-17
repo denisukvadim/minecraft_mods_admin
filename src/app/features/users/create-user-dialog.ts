@@ -8,6 +8,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 import { apiErrorMessage } from '../../core/api-error';
+import { AuthService } from '../../core/auth.service';
 import { RoleDto } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { RolesService } from '../roles/roles.service';
@@ -59,20 +60,27 @@ import { UsersService } from './users.service';
             }
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="full">
-            <mat-label>Roles</mat-label>
-            <mat-select formControlName="roles" multiple>
-              @for (role of roles(); track role.id) {
-                <mat-option [value]="role.name">
-                  {{ role.name }}
-                  @if (role.is_system) {
-                    <span class="muted"> · system</span>
-                  }
-                </mat-option>
-              }
-            </mat-select>
-            <mat-hint>Defaults to “user”. Permissions come from the selected roles.</mat-hint>
-          </mat-form-field>
+          @if (isAdmin()) {
+            <mat-form-field appearance="outline" class="full">
+              <mat-label>Roles</mat-label>
+              <mat-select formControlName="roles" multiple>
+                @for (role of roles(); track role.id) {
+                  <mat-option [value]="role.name">
+                    {{ role.name }}
+                    @if (role.is_system) {
+                      <span class="muted"> · system</span>
+                    }
+                  </mat-option>
+                }
+              </mat-select>
+              <mat-hint>Defaults to “user”. Permissions come from the selected roles.</mat-hint>
+            </mat-form-field>
+          } @else {
+            <p class="hint full">
+              The new account inherits exactly your roles and direct permissions — no more. An
+              administrator can adjust it later.
+            </p>
+          }
 
           <div class="full">
             <mat-slide-toggle formControlName="isActive"> Account is active </mat-slide-toggle>
@@ -97,10 +105,12 @@ import { UsersService } from './users.service';
 export class CreateUserDialog {
   private readonly users = inject(UsersService);
   private readonly rolesService = inject(RolesService);
+  private readonly auth = inject(AuthService);
   private readonly notify = inject(NotifyService);
   private readonly ref = inject<MatDialogRef<CreateUserDialog, boolean>>(MatDialogRef);
   private readonly formBuilder = inject(FormBuilder);
 
+  protected readonly isAdmin = this.auth.isAdmin;
   protected readonly roles = signal<RoleDto[]>([]);
   protected readonly saving = signal(false);
 
@@ -121,7 +131,9 @@ export class CreateUserDialog {
   });
 
   constructor() {
-    void this.loadRoles();
+    if (this.isAdmin()) {
+      void this.loadRoles();
+    }
   }
 
   protected async submit(): Promise<void> {
@@ -131,7 +143,7 @@ export class CreateUserDialog {
     }
 
     const value = this.form.getRawValue();
-    if (value.roles.length === 0) {
+    if (this.isAdmin() && value.roles.length === 0) {
       this.notify.error('Select at least one role.');
       return;
     }
@@ -142,7 +154,8 @@ export class CreateUserDialog {
         email: value.email.trim(),
         username: value.username.trim(),
         password: value.password,
-        roles: value.roles,
+        // Non-admins cannot choose roles: the backend copies their own access.
+        roles: this.isAdmin() ? value.roles : [],
         is_active: value.isActive,
       });
       this.ref.close(true);

@@ -2,7 +2,10 @@
   <header class="page-header">
     <div>
       <h1>Users</h1>
-      <p>Accounts that can sign in. Only administrators can create or edit them.</p>
+      <p>
+        Accounts that can sign in. Administrators manage them here; Mods operators with
+        <span class="mono">users:create</span> can onboard equal-access accounts from the Mods page.
+      </p>
     </div>
     <span class="spacer"></span>
     <button matButton="filled" type="button" (click)="createUser()">
@@ -87,8 +90,8 @@
   </div>
 
   <p class="hint">
-    New accounts get the <span class="mono">user</span> role by default. That role starts with
-    <span class="mono">mods:read</span> and <span class="mono">mods:download</span>; adjust it under
-    <a routerLink="/roles">Roles</a>.
+    New accounts get the <span class="mono">user</span> role by default. That role starts with mod
+    management (<span class="mono">mods:read/download/upload/delete</span>), server control and
+    <span class="mono">users:create</span>; adjust it under <a routerLink="/roles">Roles</a>.
   </p>
 </section>

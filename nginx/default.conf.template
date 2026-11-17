@@ -5,6 +5,11 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Mod uploads reach the API through this vhost. nginx defaults to 1 MB and
+    # would answer 413 before the backend sees the request, so keep this at
+    # least as large as the API's MODS_MAX_UPLOAD_BYTES (128 MiB by default).
+    client_max_body_size ${CLIENT_MAX_BODY_SIZE};
+
     # Backend API (set BACKEND_URL at runtime, e.g. http://backend:8080).
     location /api/ {
         proxy_pass ${BACKEND_URL};

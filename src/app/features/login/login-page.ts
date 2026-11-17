@@ -40,7 +40,7 @@ export class LoginPage {
   protected readonly showPassword = signal(false);
 
   constructor() {
-    if (this.auth.hasValidSession() && this.auth.isAdmin()) {
+    if (this.auth.hasValidSession() && this.auth.canUsePanel()) {
       void this.router.navigate(['/mods']);
     }
   }

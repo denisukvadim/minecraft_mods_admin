@@ -18,6 +18,10 @@ interface NavItem {
   path: string;
   label: string;
   icon: string;
+  /** Dynamic permission needed to show the entry; admins see it regardless. */
+  permission?: string;
+  /** Shown only to the system `admin` role. */
+  adminOnly?: boolean;
 }
 
 @Component({
@@ -41,13 +45,20 @@ export class Shell {
   private readonly notify = inject(NotifyService);
   private readonly router = inject(Router);
 
-  protected readonly navItems: NavItem[] = [
-    { path: '/mods', label: 'Mods', icon: 'folder_open' },
-    { path: '/users', label: 'Users', icon: 'group' },
-    { path: '/roles', label: 'Roles', icon: 'shield_person' },
-    { path: '/permissions', label: 'Permissions', icon: 'rule' },
-    { path: '/audit', label: 'Audit', icon: 'history' },
+  private readonly allNavItems: NavItem[] = [
+    { path: '/mods', label: 'Mods', icon: 'folder_open', permission: 'mods:read' },
+    { path: '/users', label: 'Users', icon: 'group', adminOnly: true },
+    { path: '/roles', label: 'Roles', icon: 'shield_person', adminOnly: true },
+    { path: '/permissions', label: 'Permissions', icon: 'rule', adminOnly: true },
+    { path: '/audit', label: 'Audit', icon: 'history', adminOnly: true },
   ];
+
+  /** Only the sections the current account may open; `user` sees Mods alone. */
+  protected readonly navItems = computed(() =>
+    this.allNavItems.filter((item) =>
+      item.adminOnly ? this.auth.isAdmin() : !item.permission || this.auth.can(item.permission),
+    ),
+  );
 
   private readonly url = toSignal(
     this.router.events.pipe(
@@ -59,7 +70,7 @@ export class Shell {
   );
 
   protected readonly pageTitle = computed(
-    () => this.navItems.find((item) => this.url().startsWith(item.path))?.label ?? 'Admin',
+    () => this.navItems().find((item) => this.url().startsWith(item.path))?.label ?? 'Admin',
   );
 
   protected readonly isHandset = toSignal(
