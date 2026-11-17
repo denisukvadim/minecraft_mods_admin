@@ -57,8 +57,25 @@ export class ModsService {
     if (!response.body) {
       throw new Error('The API returned an empty file.');
     }
+    this.saveBlob(response.body, fileName);
+  }
 
-    const url = URL.createObjectURL(response.body);
+  /** One ZIP with every mod, assembled by the API on demand. */
+  async downloadAll(): Promise<void> {
+    const response = await firstValueFrom(
+      this.http.get(`${this.base}/archive`, {
+        observe: 'response',
+        responseType: 'blob',
+      }),
+    );
+    if (!response.body) {
+      throw new Error('The API returned an empty archive.');
+    }
+    this.saveBlob(response.body, 'mods.zip');
+  }
+
+  private saveBlob(blob: Blob, fileName: string): void {
+    const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
     anchor.download = fileName;

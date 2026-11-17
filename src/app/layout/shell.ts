@@ -2,17 +2,19 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { filter, map, startWith } from 'rxjs';
+import { firstValueFrom, filter, map, startWith } from 'rxjs';
 
 import { apiErrorMessage } from '../core/api-error';
 import { AuthService } from '../core/auth.service';
 import { NotifyService } from '../core/notify.service';
+import { ChangePasswordDialog } from '../features/account/change-password-dialog';
 
 interface NavItem {
   path: string;
@@ -44,16 +46,17 @@ export class Shell {
   protected readonly auth = inject(AuthService);
   private readonly notify = inject(NotifyService);
   private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
 
   private readonly allNavItems: NavItem[] = [
     { path: '/mods', label: 'Mods', icon: 'folder_open', permission: 'mods:read' },
     { path: '/users', label: 'Users', icon: 'group', adminOnly: true },
     { path: '/roles', label: 'Roles', icon: 'shield_person', adminOnly: true },
     { path: '/permissions', label: 'Permissions', icon: 'rule', adminOnly: true },
-    { path: '/audit', label: 'Audit', icon: 'history', adminOnly: true },
+    { path: '/audit', label: 'Audit', icon: 'history', permission: 'audit:read' },
   ];
 
-  /** Only the sections the current account may open; `user` sees Mods alone. */
+  /** Only the sections the current account may open; `user` sees Mods and Audit. */
   protected readonly navItems = computed(() =>
     this.allNavItems.filter((item) =>
       item.adminOnly ? this.auth.isAdmin() : !item.permission || this.auth.can(item.permission),
@@ -104,5 +107,17 @@ export class Shell {
 
   protected logout(): void {
     this.auth.logout();
+  }
+
+  /** Available to every signed-in account; no permission is involved. */
+  protected async changePassword(): Promise<void> {
+    const ref = this.dialog.open<ChangePasswordDialog, void, boolean>(ChangePasswordDialog, {
+      width: '420px',
+      maxWidth: '95vw',
+    });
+    const changed = await firstValueFrom(ref.afterClosed());
+    if (changed === true) {
+      this.notify.success('Password changed');
+    }
   }
 }

@@ -14,6 +14,11 @@ export interface TokenResponse {
   expires_at: string;
 }
 
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
 export interface MeResponse {
   id: string;
   email: string;

@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { environment } from '../../environments/environment';
-import { MeResponse, TokenResponse } from './models';
+import { ChangePasswordRequest, MeResponse, TokenResponse } from './models';
 
 const STORAGE_KEY = 'minecraft-mods-admin.session';
 
@@ -128,6 +128,18 @@ export class AuthService {
         queryParams: { returnUrl: this.router.url },
       });
     }
+  }
+
+  /**
+   * Changes the password of the signed-in account. The backend re-checks the
+   * current password; the session token itself stays valid until it expires.
+   */
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    const payload: ChangePasswordRequest = {
+      current_password: currentPassword,
+      new_password: newPassword,
+    };
+    await firstValueFrom(this.http.put<void>(`${environment.apiBaseUrl}/auth/password`, payload));
   }
 
   private persist(session: Session): void {

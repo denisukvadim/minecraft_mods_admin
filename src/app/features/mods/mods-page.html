@@ -13,6 +13,19 @@
       </button>
     }
 
+    @if (canDownload() && files().length > 0) {
+      <button
+        matButton
+        type="button"
+        matTooltip="Every file in MODS_DIR as one ZIP"
+        [disabled]="downloadingAll()"
+        (click)="downloadAll()"
+      >
+        <mat-icon>archive</mat-icon>
+        {{ downloadingAll() ? 'Preparing…' : 'Download all' }}
+      </button>
+    }
+
     @if (canUpload()) {
       <input #fileInput type="file" hidden (change)="onFileSelected($event)" />
       <button

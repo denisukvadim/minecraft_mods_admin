@@ -8,7 +8,7 @@
 
 SPA-панель адміністратора для [`../minecraftmods_backend`](../minecraftmods_backend).
 Керує користувачами, ролями, каталогом правил і файлами модів, показує журнал дій.
-Панель приймає **`admin`** і **`user`**: останній бачить лише розділ Mods і може
+Панель приймає **`admin`** і **`user`**: останній бачить Mods та Audit і може
 створювати акаунти з точно таким самим доступом, як у нього.
 
 | Шар       | Вибір                                                                           |
@@ -30,16 +30,17 @@ Node **26.13.1**, npm **12.2.2**, TypeScript ~6.0.
 - `/login` — email+пароль; сесію отримує `admin` або акаунт із `mods:read`, перевірка **до** збереження токена;
 - `/forbidden` — якщо доступ до розділу зник під час сесії;
 - `/mods` — список файлів, upload із прогресом (multipart), download, delete,
-  діалог історії по файлу; картка сервера Minecraft: статус (polling 10 с),
-  Start/Stop/Restart, діалог логів (auto-refresh 5 с, 100/300/1000 рядків);
-  upload і delete заблоковані, поки сервер запущений; кнопка **New user** для
-  акаунтів із `users:create` (без вибору ролей);
+  **Download all** (один ZIP з усіх файлів), діалог історії по файлу; картка
+  сервера Minecraft: статус (polling 10 с), Start/Stop/Restart, діалог логів
+  (auto-refresh 5 с, 100/300/1000 рядків); upload і delete заблоковані, поки
+  сервер запущений; кнопка **New user** для акаунтів із `users:create`
+  (без вибору ролей);
 - `/users` — список, створення, видалення, діалог `Manage` з трьома вкладками:
   профіль (кнопка Save), ролі (одразу), прямі права (одразу) + ефективні права;
 - `/roles` — список, створення/редагування з чекбоксами прав по ресурсах,
   видалення (system-ролі захищені);
 - `/permissions` — каталог `resource:action`, створення/видалення;
-- `/audit` — журнал, фільтр за точною назвою файлу, історія по кліку на файл;
+- `/audit` — журнал (`audit:read`), фільтр за точною назвою файлу, історія по кліку на файл;
 - shell: sidenav, toolbar, меню користувача, handset-режим;
 - спільні компоненти: `Pager`, `ConfirmDialog`, `NotifyService`, `apiErrorMessage`,
   `formatBytes`, `actorLabel`.
@@ -114,6 +115,7 @@ src/
     └── features/
         ├── login/              # LoginPage
         ├── forbidden/          # ForbiddenPage
+        ├── account/            # ChangePasswordDialog (меню акаунта)
         ├── mods/               # ModsPage + ModsService (+ картка сервера)
         ├── server/             # ServerService, ServerLogsDialog
         ├── users/              # UsersPage, CreateUserDialog, ManageUserDialog, UsersService
@@ -137,10 +139,11 @@ src/
   `environment.apiBaseUrl`. На `401` (крім `/auth/login`) чистить сесію й веде на
   `/login?returnUrl=…`.
 - **Guards.** `authGuard` перевіряє лише живу сесію; `permissionGuard(code)` —
-  динамічне право (Mods → `mods:read`); `adminGuard` — системну роль `admin`
-  (Users/Roles/Permissions/Audit). Порушення → `/login` або `/forbidden`.
+  динамічне право (Mods → `mods:read`, Audit → `audit:read`); `adminGuard` —
+  системну роль `admin` (Users/Roles/Permissions). Порушення → `/login` або
+  `/forbidden`.
 - **Меню.** `Shell.navItems` — `computed`, який фільтрує розділи за
-  `isAdmin()`/`can(permission)`; акаунт `user` бачить тільки Mods.
+  `isAdmin()`/`can(permission)`; акаунт `user` бачить Mods та Audit.
 - **Пагінація.** List-ендпоінти не віддають total, тому сторінка запитує
   `PAGE_SIZE + 1`, а `withHasMore` відрізає зайвий рядок і каже, чи є наступна.
   Якщо видалили останній рядок останньої сторінки, `ModsPage` відкочує offset.
@@ -154,14 +157,14 @@ src/
 | Екран       | Виклики                                                                                        |
 | ----------- | ---------------------------------------------------------------------------------------------- |
 | логін       | `POST /auth/login`, `GET /auth/me`                                                             |
-| shell       | `GET /auth/me` (refreshMe на старт)                                                            |
-| mods        | `GET /mods`, `POST /mods`, `GET /mods/{name}/download`, `DELETE /mods/{name}`                  |
+| shell       | `GET /auth/me` (refreshMe на старт); `PUT /auth/password` (діалог зміни пароля)                 |
+| mods        | `GET /mods`, `POST /mods`, `GET /mods/archive`, `GET /mods/{name}/download`, `DELETE /mods/{name}` |
 | server      | `GET /server/status`, `POST /server/{start,stop,restart}`, `GET /server/logs`                   |
 | users       | `GET/POST /users`, `GET/PATCH/DELETE /users/{id}`                                              |
 | manage      | `POST/DELETE /users/{id}/roles/{roleId}`, `POST/DELETE /users/{id}/permissions/{permissionId}` |
 | roles       | `GET/POST /roles`, `GET/PATCH/DELETE /roles/{id}`, `PUT /roles/{id}/permissions`               |
 | permissions | `GET/POST /permissions`, `DELETE /permissions/{id}`                                            |
-| audit       | `GET /mod-actions`, `GET /mods/{name}/history`                                                 |
+| audit       | `GET /mod-actions` (`audit:read`), `GET /mods/{name}/history`                                  |
 
 Усі шляхи — з префіксом `environment.apiBaseUrl` (`/api/v1`). Помилки бекенду:
 `{ error, message }`; пагінація — `?limit=&offset=`; імена файлів у шляху
@@ -169,10 +172,14 @@ src/
 
 ## 6. Поведінкові рішення (не змінювати випадково)
 
+- **Пароль змінюється самостійно**: меню акаунта → **Change password** →
+  `PUT /auth/password` з поточним і новим паролем, бекенд перевіряє поточний.
+  Хибний поточний дає `400`, а не `401`, тому інтерсептор не вибиває з сесії.
+  Інші сесії не відкликаються — токени живуть до `exp`.
 - **Ролі й прямі права застосовуються одразу** — перемикач робить запит і
   перечитує користувача; кнопки «зберегти» немає. Профіль зберігається кнопкою.
 - **Панель пускає `admin` і акаунти з `mods:read`**: перевірка до запису в
-  `localStorage`. Не-адмін бачить лише Mods; решта маршрутів закрита guard-ом.
+  `localStorage`. Не-адмін бачить Mods та Audit; решта маршрутів закрита guard-ом.
 - **`/forbidden` замість `/login`**, якщо креденшели валідні, але доступу до
   розділу (або панелі взагалі) вже немає.
 - **Створення користувача не-адміном** не показує вибір ролей: бекенд копіює
@@ -267,6 +274,9 @@ email `ui-smoke-<timestamp>@example.com` — видаліть його чере�
 
 ## 8. Відомі обмеження / технічний борг
 
+- **Download all буферизує ZIP у пам'яті браузера** (`responseType: 'blob'`), бо
+  Bearer-токен не можна додати до звичайного `<a download>`. Для великих
+  `MODS_DIR` це пік пам'яті на весь архів; за потреби — підписаний одноразовий URL.
 - **Немає dashboard/home**: `/` редіректить на `/mods`.
 - **Немає i18n**: UI англійською, рядки захардкоджені в шаблонах.
 - **Немає перемикача теми**: світла тема Material 3; dark mode не підключений.
@@ -281,10 +291,11 @@ email `ui-smoke-<timestamp>@example.com` — видаліть його чере�
 - **Статус сервера — додатковий запит до бекенду** кожні 10 с; без Portainer
   картка не показується.
 - **Route-level гейтинг є**: `authGuard` на shell, `permissionGuard('mods:read')`
-  на Mods, `adminGuard` на решту. Усередині Mods кнопки додатково прив'язані до
+  на Mods, `permissionGuard('audit:read')` на Audit, `adminGuard` на
+  Users/Roles/Permissions. Усередині Mods кнопки додатково прив'язані до
   `mods:upload/download/delete`, `server:manage`, `users:create`.
-- **Тестів мало**: 5 unit-тестів (shell + format); сервіси/діалоги/сторінки не
-  покриті. E2E — лише ручні скрипти вище, без CI.
+- **Тестів мало**: 8 unit-тестів (`App`, `format`, `apiErrorMessage`); сервіси,
+  діалоги й сторінки не покриті. E2E — лише ручні скрипти вище, без CI.
 - **Немає CI** (GitHub Actions тощо) і немає ESLint-конфігу — лише Prettier і `tsc`
   через `ng build`.
 - **Snackbar-стилі** залежать від внутрішніх класів Material
@@ -345,8 +356,9 @@ email `ui-smoke-<timestamp>@example.com` — видаліть його чере�
   list-ендпоінти не почнуть віддавати total.
 - **Видалення користувача** анонімізує його історію на бекенді; у діалозі це
   написано, і це не баг фронтенду.
-- **Роль `user`** отримує свій базовий набір із бекенду (міграція `0002`): моди,
-  сервер, `users:create`. Не «лагодьте» це в UI — змінюйте права через Roles.
+- **Роль `user`** отримує свій базовий набір із бекенду (міграції `0002`–`0003`):
+  моди, сервер, `users:create`, `audit:read`. Не «лагодьте» це в UI — змінюйте
+  права через Roles.
 - **Prettier** форматує і шаблони, і SCSS; після ручних правок запускайте
   `npx prettier --write`, щоб `--check` не падав.
 - **Smoke-скрипти** залежать від поточних даних і вільної 9223/4200; не запускайте

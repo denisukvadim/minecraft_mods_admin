@@ -52,7 +52,7 @@ export const routes: Routes = [
         path: 'audit',
         title: 'Audit · Mods Admin',
         data: { title: 'Audit' },
-        canActivate: [adminGuard],
+        canActivate: [permissionGuard('audit:read')],
         loadComponent: () => import('./features/audit/audit-page').then((m) => m.AuditPage),
       },
     ],

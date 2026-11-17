@@ -71,6 +71,10 @@
           <mat-icon>shield</mat-icon>
           <span>{{ auth.isAdmin() ? 'Administrator' : 'Mods operator' }}</span>
         </button>
+        <button mat-menu-item type="button" (click)="changePassword()">
+          <mat-icon>key</mat-icon>
+          <span>Change password</span>
+        </button>
         <button mat-menu-item type="button" (click)="logout()">
           <mat-icon>logout</mat-icon>
           <span>Sign out</span>

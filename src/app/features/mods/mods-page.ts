@@ -57,6 +57,7 @@ export class ModsPage {
   protected readonly uploading = signal(false);
   protected readonly uploadPercent = signal(0);
   protected readonly uploadName = signal<string | null>(null);
+  protected readonly downloadingAll = signal(false);
 
   /** `null` until the first `/server/status` response arrives. */
   protected readonly serverStatus = signal<ServerStatusDto | null>(null);
@@ -282,6 +283,27 @@ export class ModsPage {
       this.notify.success(`Downloading ${file.file_name}`);
     } catch (error: unknown) {
       this.notify.error(apiErrorMessage(error));
+    }
+  }
+
+  /** Streams one ZIP with every file, built by the API on demand. */
+  protected async downloadAll(): Promise<void> {
+    if (!this.canDownload()) {
+      this.notify.info('This account cannot download mod files.');
+      return;
+    }
+    if (this.downloadingAll()) {
+      return;
+    }
+
+    this.downloadingAll.set(true);
+    try {
+      await this.mods.downloadAll();
+      this.notify.success('Downloading all mods as mods.zip');
+    } catch (error: unknown) {
+      this.notify.error(apiErrorMessage(error));
+    } finally {
+      this.downloadingAll.set(false);
     }
   }
 
